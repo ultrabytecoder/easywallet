@@ -1,4 +1,4 @@
-## Multi-currency command-line wallet
+## Multi-currency command-line cryptocurrency wallet
 
 A non-custodial CLI wallet for developers and power users. Securely manage a portfolio of cryptocurrencies (BTC, ETH, and major ERC-20 tokens) from the safety and scriptability of your terminal.
 
