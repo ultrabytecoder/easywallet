@@ -8,6 +8,7 @@ require (
 	github.com/btcsuite/btcd/chaincfg/chainhash v1.1.0
 	github.com/ethereum/go-ethereum v1.16.3
 	github.com/samber/lo v1.52.0
+	github.com/shopspring/decimal v1.4.0
 	github.com/tyler-smith/go-bip39 v1.1.0
 	gopkg.in/yaml.v3 v3.0.1
 )

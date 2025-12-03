@@ -7,11 +7,12 @@ import (
 import "gopkg.in/yaml.v3"
 
 type ProviderInfo struct {
-	Currency       string `yaml:"currency"`
-	ProviderType   string `yaml:"provider_type"`
-	ServiceUrl     string `yaml:"service_url"`
-	TokenAddress   string `yaml:"token_address"`
-	DerivationPath string `yaml:"derivation_path"`
+	Currency          string `yaml:"currency"`
+	ProviderType      string `yaml:"provider_type"`
+	ServiceUrl        string `yaml:"service_url"`
+	TokenAddress      string `yaml:"token_address"`
+	DerivationPath    string `yaml:"derivation_path"`
+	FeeSatohisPerByte string `yaml:"fee_satoshis_per_byte"`
 }
 type Config struct {
 	Network   string         `yaml:"network"`

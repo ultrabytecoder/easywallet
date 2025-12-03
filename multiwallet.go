@@ -10,6 +10,7 @@ import (
 
 	"github.com/btcsuite/btcd/btcutil/hdkeychain"
 	"github.com/btcsuite/btcd/chaincfg"
+	"github.com/shopspring/decimal"
 	bip39 "github.com/tyler-smith/go-bip39"
 )
 
@@ -96,7 +97,7 @@ func (e *MultiWallet) GetBalance(cointype string) (*big.Float, error) {
 	return provider.GetBalance()
 }
 
-func (e *MultiWallet) Send(cointype string, address string, amount float64) (string, error) {
+func (e *MultiWallet) Send(cointype string, address string, amount decimal.Decimal) (string, error) {
 	provider, ok := e.Providers[cointype]
 	if !ok {
 		return "", errors.New("cointype not found")

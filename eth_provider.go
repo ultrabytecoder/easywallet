@@ -13,6 +13,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	gcrypto "github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/shopspring/decimal"
 )
 
 type EthereumProvider struct {
@@ -110,7 +111,7 @@ func (e *EthereumProvider) GetBalance() (*big.Float, error) {
 	return resultAmount, nil
 }
 
-func (e *EthereumProvider) Send(recipientAddress string, amount float64) (string, error) {
+func (e *EthereumProvider) Send(recipientAddress string, amount decimal.Decimal) (string, error) {
 	address, err := e.GetAddress()
 
 	if err != nil {
@@ -121,8 +122,7 @@ func (e *EthereumProvider) Send(recipientAddress string, amount float64) (string
 
 	ra := common.HexToAddress(recipientAddress)
 
-	amountWei := new(big.Int)
-	amountWei.SetString(fmt.Sprintf("%.0f", amount*1e18), 10)
+	amountWei := amount.Shift(18).BigInt()
 
 	client, err := e.CreateEthereumClient()
 
@@ -283,7 +283,7 @@ func convertToTokenUnits(amount float64, decimals uint8) *big.Int {
 	return resultInt
 }
 
-func (e *EthTokenProvider) Send(recipientAddress string, amount float64) (string, error) {
+func (e *EthTokenProvider) Send(recipientAddress string, amount decimal.Decimal) (string, error) {
 	fromAddress, err := e.GetAddress()
 	if err != nil {
 		return "", err
@@ -311,7 +311,7 @@ func (e *EthTokenProvider) Send(recipientAddress string, amount float64) (string
 	}
 
 	// Convert amount to token units
-	amountWei := convertToTokenUnits(amount, decimals)
+	amountTokenUnits := amount.Shift(int32(decimals)).BigInt()
 
 	// Get transaction parameters
 	nonce, err := client.PendingNonceAt(context.Background(), fa)
@@ -325,7 +325,7 @@ func (e *EthTokenProvider) Send(recipientAddress string, amount float64) (string
 	}
 
 	// Encode transfer function call
-	data, err := abi.Pack("transfer", ra, amountWei)
+	data, err := abi.Pack("transfer", ra, amountTokenUnits)
 	if err != nil {
 		return "", fmt.Errorf("failed to pack transfer data: %v", err)
 	}

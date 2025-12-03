@@ -4,12 +4,13 @@ import (
 	"math/big"
 
 	"github.com/btcsuite/btcd/btcutil/hdkeychain"
+	"github.com/shopspring/decimal"
 )
 
 type Provider interface {
 	GetAddress() (string, error)
 	GetBalance() (*big.Float, error)
-	Send(string, float64) (string, error)
+	Send(string, decimal.Decimal) (string, error)
 }
 
 type BaseProvider struct {

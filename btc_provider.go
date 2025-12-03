@@ -19,6 +19,7 @@ import (
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcd/wire"
 	"github.com/samber/lo"
+	"github.com/shopspring/decimal"
 )
 
 type BtcProvider struct {
@@ -120,10 +121,6 @@ const SatoshisPerBitcoin = 100000000
 
 const SatsPerByte = 2
 
-func BtcToSatoshis(btc float64) int64 {
-	return int64(math.Round(btc * SatoshisPerBitcoin))
-}
-
 func SendRawTransaction(client *MempoolClient, rawHex string) (string, error) {
 	// Create the request
 	req, err := http.NewRequest("POST", client.BaseURL+"/tx", bytes.NewBufferString(rawHex))
@@ -147,7 +144,7 @@ func SendRawTransaction(client *MempoolClient, rawHex string) (string, error) {
 	return string(body), nil
 }
 
-func (b *BtcProvider) Send(recipientAddress string, amount float64) (string, error) {
+func (b *BtcProvider) Send(recipientAddress string, amount decimal.Decimal) (string, error) {
 
 	if len(b.LatestUtxos) == 0 {
 		_, err := b.GetBalance()
@@ -157,7 +154,7 @@ func (b *BtcProvider) Send(recipientAddress string, amount float64) (string, err
 		}
 	}
 
-	amountSatoshis := BtcToSatoshis(amount)
+	amountSatoshis := amount.Shift(8).IntPart()
 	totalValue := lo.SumBy(b.LatestUtxos, func(u UTXO) int64 {
 		return u.Value
 	})
@@ -180,7 +177,7 @@ func (b *BtcProvider) Send(recipientAddress string, amount float64) (string, err
 	}
 
 	changeAddress, err := b.GetAddress()
-	
+
 	if err != nil {
 		return "", err
 	}

@@ -6,6 +6,8 @@ import (
 	"flag"
 	"fmt"
 	"os"
+
+	"github.com/shopspring/decimal"
 )
 
 // Interactive mode command indexes
@@ -32,8 +34,7 @@ func checkFileExists(filePath string) bool {
 }
 
 func main() {
-
-	fmt.Println("Easy Wallet v 1.0.6")
+	fmt.Println("Easy Wallet v 1.0.7")
 
 	config, err := easywallet.ReadConfig("config.yaml")
 
@@ -45,7 +46,7 @@ func main() {
 	commandCmdParam := flag.String("command", "", "Coin")
 	coinCmdParam := flag.String("coin", "", "Coin")
 	recipientAddressCmdParam := flag.String("address", "", "Address to send")
-	amountCmdParam := flag.Float64("amount", 0.0, "Amount")
+	amountCmdParam := flag.String("amount", "", "Amount")
 
 	flag.Parse()
 
@@ -124,7 +125,7 @@ func sendTransactionCommand(ew *easywallet.MultiWallet) bool {
 	}
 
 	fmt.Println("Enter amount:")
-	var amount float64
+	var amount string
 	_, err = fmt.Scan(&amount)
 	if err != nil {
 		return true
@@ -134,7 +135,7 @@ func sendTransactionCommand(ew *easywallet.MultiWallet) bool {
 	return false
 }
 
-func runParametrized(commandCmdParam string, ew *easywallet.MultiWallet, coinCmdParam string, recipientAddressCmdParam string, amountCmdParam float64) {
+func runParametrized(commandCmdParam string, ew *easywallet.MultiWallet, coinCmdParam string, recipientAddressCmdParam string, amountCmdParam string) {
 
 	if coinCmdParam == "" {
 		fmt.Println("coin is required")
@@ -151,7 +152,7 @@ func runParametrized(commandCmdParam string, ew *easywallet.MultiWallet, coinCmd
 	}
 }
 
-func sendTransaction(ew *easywallet.MultiWallet, coin string, recipientAddress string, amount float64) {
+func sendTransaction(ew *easywallet.MultiWallet, coin string, recipientAddress string, amount string) {
 	curAddress, _ := ew.GetAddress(coin)
 	fmt.Println("Current address: ", curAddress)
 	balance, _ := ew.GetBalance(coin)
@@ -159,7 +160,13 @@ func sendTransaction(ew *easywallet.MultiWallet, coin string, recipientAddress s
 	fmt.Println("Coin: ", coin)
 	fmt.Println("Address: ", recipientAddress)
 
-	tx, err := ew.Send(coin, recipientAddress, amount)
+	da, err := decimal.NewFromString(amount)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	tx, err := ew.Send(coin, recipientAddress, da)
 	if err != nil {
 		fmt.Println(err)
 	} else {
