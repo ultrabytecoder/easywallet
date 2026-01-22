@@ -155,9 +155,6 @@ func (b *BtcProvider) Send(recipientAddress string, amount decimal.Decimal) (str
 	}
 
 	amountSatoshis := amount.Shift(8).IntPart()
-	totalValue := lo.SumBy(b.LatestUtxos, func(u UTXO) int64 {
-		return u.Value
-	})
 
 	sort.Slice(b.LatestUtxos, func(i, j int) bool {
 		return b.LatestUtxos[i].Value > b.LatestUtxos[j].Value
@@ -165,14 +162,14 @@ func (b *BtcProvider) Send(recipientAddress string, amount decimal.Decimal) (str
 
 	var utxosForTx []UTXO
 
-	satoshisAccum := int64(0)
+	utxosSum := int64(0)
 
 	for _, value := range b.LatestUtxos {
-		satoshisAccum += value.Value
+		utxosSum += value.Value
 		utxosForTx = append(utxosForTx, value)
 
-		if satoshisAccum > amountSatoshis {
-			continue
+		if utxosSum >= amountSatoshis {
+			break
 		}
 	}
 
@@ -187,10 +184,10 @@ func (b *BtcProvider) Send(recipientAddress string, amount decimal.Decimal) (str
 
 	destinations := map[string]int64{
 		recipientAddress: amountSatoshis,
-		changeAddress:    totalValue - amountSatoshis - int64(feePerTx),
+		changeAddress:    utxosSum - amountSatoshis - int64(feePerTx),
 	}
 
-	if amountSatoshis >= (totalValue - int64(feePerTx)) {
+	if amountSatoshis >= (utxosSum - int64(feePerTx)) {
 		return "", errors.New("amount is too small")
 	}
 
