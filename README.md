@@ -2,7 +2,8 @@
 
 A powerful, non-custodial CLI wallet built for developers and advanced users. Securely manage your cryptocurrency portfolio — including BTC, ETH, and major ERC-20 tokens — directly from your terminal with full control, security, and scriptability.
 
-Key Features
+### Key Features
+
 🚀 Multi-Currency Support
 
 One unified wallet for Bitcoin, Ethereum, and major token standards — manage multiple chains seamlessly from a single interface.
