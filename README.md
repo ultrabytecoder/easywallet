@@ -1,10 +1,16 @@
-## Multi-currency command-line cryptocurrency wallet
+## Multi-Currency Command-Line Cryptocurrency Wallet
 
-A non-custodial CLI wallet for developers and power users. Securely manage a portfolio of cryptocurrencies (BTC, ETH, and major ERC-20 tokens) from the safety and scriptability of your terminal.
+A powerful, non-custodial CLI wallet built for developers and advanced users. Securely manage your cryptocurrency portfolio — including BTC, ETH, and major ERC-20 tokens — directly from your terminal with full control, security, and scriptability.
 
-Key Features:
+Key Features
+🚀 Multi-Currency Support
 
-- Multi-Currency Support: A single wallet for Bitcoin, Ethereum, and other major chains.
-- Lightweight & Private: No bloated GUI. Runs on minimal resources and doesn't rely on centralized servers.
-- Transparent & Auditable: Open-source codebase. Verify every operation and be in full control of your funds.
+One unified wallet for Bitcoin, Ethereum, and major token standards — manage multiple chains seamlessly from a single interface.
 
+⚡ Lightweight & Private
+
+No bloated GUI. No unnecessary background services. Runs efficiently on minimal resources and avoids reliance on centralized infrastructure.
+
+🔎 Transparent & Auditable
+
+Fully open-source. Inspect the code, verify every operation, and maintain complete control over your funds at all times.
