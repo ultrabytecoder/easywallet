@@ -13,6 +13,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	gcrypto "github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/shopspring/decimal"
 )
 
@@ -55,8 +56,8 @@ const erc20ABI = `[
     }
 ]`
 
-func NewEthereumProvider(key *hdkeychain.ExtendedKey, serviceUrl string) *EthereumProvider {
-	return &EthereumProvider{BaseProvider: NewBaseProvider(key, serviceUrl)}
+func NewEthereumProvider(key *hdkeychain.ExtendedKey, serviceUrl string, proxyUrl string) *EthereumProvider {
+	return &EthereumProvider{BaseProvider: NewBaseProvider(key, serviceUrl, proxyUrl)}
 }
 
 func (e *EthereumProvider) GetAddress() (string, error) {
@@ -78,10 +79,21 @@ func (e *EthereumProvider) GetAddress() (string, error) {
 }
 
 func (e *EthereumProvider) CreateEthereumClient() (*ethclient.Client, error) {
-	client, err := ethclient.Dial(e.serviceUrl)
+	httpClient, err := GetClientWithProxy(e.proxyUrl)
+
 	if err != nil {
 		return nil, err
 	}
+
+	rpcClient, err := rpc.DialOptions(
+		context.Background(),
+		e.serviceUrl,
+		rpc.WithHTTPClient(httpClient),
+	)
+	if err != nil {
+		panic(err)
+	}
+	client := ethclient.NewClient(rpcClient)
 
 	return client, nil
 }
@@ -397,6 +409,6 @@ func (e *EthTokenProvider) Send(recipientAddress string, amount decimal.Decimal)
 	return signedTx.Hash().Hex(), nil
 }
 
-func NewEthTokenProvider(key *hdkeychain.ExtendedKey, tokenAddress string, serviceUrl string) *EthTokenProvider {
-	return &EthTokenProvider{EthereumProvider: NewEthereumProvider(key, serviceUrl), TokenAddress: tokenAddress}
+func NewEthTokenProvider(key *hdkeychain.ExtendedKey, tokenAddress string, serviceUrl string, proxyUrl string) *EthTokenProvider {
+	return &EthTokenProvider{EthereumProvider: NewEthereumProvider(key, serviceUrl, proxyUrl), TokenAddress: tokenAddress}
 }

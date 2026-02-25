@@ -1,11 +1,13 @@
 package main
 
 import (
+	"bufio"
 	"easywallet"
 	"errors"
 	"flag"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/shopspring/decimal"
 )
@@ -34,7 +36,7 @@ func checkFileExists(filePath string) bool {
 }
 
 func main() {
-	fmt.Println("Easy Wallet v 1.0.8")
+	fmt.Println("Easy Wallet v 1.0.9")
 
 	config, err := easywallet.ReadConfig("config.yaml")
 
@@ -47,26 +49,74 @@ func main() {
 	coinCmdParam := flag.String("coin", "", "Coin")
 	recipientAddressCmdParam := flag.String("address", "", "Address to send")
 	amountCmdParam := flag.String("amount", "", "Amount")
+	seedEncryptionPasswordParam := flag.String("password", "", "Seed encryption password")
 
 	flag.Parse()
 
-	ew, err := easywallet.NewMultiWallet(config, os.Getenv("MNEMONIC"))
+	switch *modeCmdParam {
+	case "create":
+		createSeed()
+	case "i":
+		runInteractive(config)
+	default:
+		runParametrized(config,
+			*seedEncryptionPasswordParam,
+			*commandCmdParam,
+			*coinCmdParam,
+			*recipientAddressCmdParam,
+			*amountCmdParam)
+	}
+
+}
+
+func createSeed() {
+	reader := bufio.NewReader(os.Stdin)
+
+	fmt.Print("Enter master seed: ")
+	mnemonic, _ := reader.ReadString('\n')
+	mnemonic = strings.TrimSpace(mnemonic)
+
+	fmt.Print("Enter seed encryption password: ")
+	password, _ := reader.ReadString('\n')
+	password = strings.TrimSpace(password)
+
+	if len(password) == 0 {
+		fmt.Println("Warning! Seed is not encrypted!")
+	}
+	err := easywallet.GenerateAndSaveMasterSeed(mnemonic, password)
+	if err != nil {
+		fmt.Println(err)
+	}
+}
+func runInteractive(config *easywallet.Config) {
+
+	seedStorage, err := easywallet.ReadSeedStorage()
 
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
-	switch *modeCmdParam {
-	case "i":
-		runInteractive(ew)
-	default:
-		runParametrized(*commandCmdParam, ew, *coinCmdParam, *recipientAddressCmdParam, *amountCmdParam)
+	seedEncryptionPassword := ""
+	if seedStorage.IsEncrypted {
+		reader := bufio.NewReader(os.Stdin)
+		fmt.Print("Enter seed encryption password: ")
+		seedEncryptionPassword, err = reader.ReadString('\n')
+
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		seedEncryptionPassword = strings.TrimSpace(seedEncryptionPassword)
 	}
 
-}
+	ew, err := easywallet.NewMultiWallet(config, seedEncryptionPassword)
 
-func runInteractive(ew *easywallet.MultiWallet) {
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
 	for {
 		fmt.Print("Enter command: \n" +
 			"1: get balance\n" +
@@ -135,10 +185,22 @@ func sendTransactionCommand(ew *easywallet.MultiWallet) bool {
 	return false
 }
 
-func runParametrized(commandCmdParam string, ew *easywallet.MultiWallet, coinCmdParam string, recipientAddressCmdParam string, amountCmdParam string) {
+func runParametrized(config *easywallet.Config,
+	seedEncryptionPasswordParam string,
+	commandCmdParam string,
+	coinCmdParam string,
+	recipientAddressCmdParam string,
+	amountCmdParam string) {
 
 	if coinCmdParam == "" {
 		fmt.Println("coin is required")
+		return
+	}
+
+	ew, err := easywallet.NewMultiWallet(config, seedEncryptionPasswordParam)
+
+	if err != nil {
+		fmt.Println(err)
 		return
 	}
 

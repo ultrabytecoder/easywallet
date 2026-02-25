@@ -1,7 +1,14 @@
 package easywallet
 
 import (
+	"crypto/aes"
+	"crypto/cipher"
+	"crypto/rand"
+	"crypto/sha256"
+	"encoding/gob"
+	"io"
 	"math/big"
+	"os"
 
 	"errors"
 	"fmt"
@@ -11,12 +18,13 @@ import (
 	"github.com/btcsuite/btcd/btcutil/hdkeychain"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/shopspring/decimal"
-	bip39 "github.com/tyler-smith/go-bip39"
+	"github.com/tyler-smith/go-bip39"
 )
 
 type MultiWallet struct {
-	Providers map[string]Provider
-	MasterKey *hdkeychain.ExtendedKey
+	Providers   map[string]Provider
+	MasterKey   *hdkeychain.ExtendedKey
+	SeedStorage *MasterSeedStorage
 }
 
 const (
@@ -25,14 +33,16 @@ const (
 	ProviderTypeEthToken string = "EthTokenProvider"
 )
 
-func NewMultiWallet(config *Config, mnemonic string) (*MultiWallet, error) {
+type MasterSeedStorage struct {
+	MasterSeed  []byte
+	IsEncrypted bool
+}
 
-	if mnemonic == "" {
-		return nil, errors.New("empty mnemonic")
-	}
-
-	if !bip39.IsMnemonicValid(mnemonic) {
-		return nil, errors.New("invalid mnemonic")
+func NewMultiWallet(config *Config, masterSeedEncryptionPassword string) (*MultiWallet, error) {
+	// Read seed data from binary file
+	seedStorage, err := ReadSeedStorage()
+	if err != nil {
+		return nil, err
 	}
 
 	var chain chaincfg.Params
@@ -45,7 +55,16 @@ func NewMultiWallet(config *Config, mnemonic string) (*MultiWallet, error) {
 		return nil, fmt.Errorf("unknown network: %s", config.Network)
 	}
 
-	seed := bip39.NewSeed(mnemonic, "")
+	var seed []byte
+
+	if seedStorage.IsEncrypted {
+		seed, err = decryptSeed(seedStorage.MasterSeed, masterSeedEncryptionPassword)
+		if err != nil {
+			return nil, fmt.Errorf("failed to decrypt seed: %w", err)
+		}
+	} else {
+		seed = seedStorage.MasterSeed
+	}
 
 	masterKey, err := hdkeychain.NewMaster(seed, &chain)
 	if err != nil {
@@ -64,18 +83,127 @@ func NewMultiWallet(config *Config, mnemonic string) (*MultiWallet, error) {
 		var provider Provider
 		switch providerInfo.ProviderType {
 		case ProviderTypeBtc:
-			provider = NewBtcProvider(key, providerInfo.ServiceUrl, &chain)
+			provider = NewBtcProvider(key, providerInfo.ServiceUrl, config.ProxyUrl, &chain)
 		case ProviderTypeEth:
-			provider = NewEthereumProvider(key, providerInfo.ServiceUrl)
+			provider = NewEthereumProvider(key, providerInfo.ServiceUrl, config.ProxyUrl)
 		case ProviderTypeEthToken:
-			provider = NewEthTokenProvider(key, providerInfo.TokenAddress, providerInfo.ServiceUrl)
+			provider = NewEthTokenProvider(key, providerInfo.TokenAddress, providerInfo.ServiceUrl, config.ProxyUrl)
 		}
 
 		providers[providerInfo.Currency] = provider
 
 	}
 
-	return &MultiWallet{Providers: providers, MasterKey: masterKey}, nil
+	return &MultiWallet{Providers: providers, MasterKey: masterKey, SeedStorage: seedStorage}, nil
+}
+
+func ReadSeedStorage() (*MasterSeedStorage, error) {
+	file, err := os.Open("seed.dat")
+	if err != nil {
+		return nil, fmt.Errorf("failed to open seed.dat: %w", err)
+	}
+	defer file.Close()
+
+	var seedStorage MasterSeedStorage
+	decoder := gob.NewDecoder(file)
+	if err := decoder.Decode(&seedStorage); err != nil {
+		return nil, fmt.Errorf("failed to decode seed storage: %w", err)
+	}
+	return &seedStorage, nil
+}
+func GenerateAndSaveMasterSeed(mnemonic string, seedEncryptionPassword string) error {
+	if mnemonic == "" {
+		return errors.New("empty mnemonic")
+	}
+
+	if !bip39.IsMnemonicValid(mnemonic) {
+		return errors.New("invalid mnemonic")
+	}
+
+	seed := bip39.NewSeed(mnemonic, "")
+
+	var masterSeed []byte
+	isEncrypted := len(seedEncryptionPassword) > 0
+
+	if isEncrypted {
+		encryptedSeed, err := encryptSeed(seed, seedEncryptionPassword)
+		if err != nil {
+			return fmt.Errorf("failed to encrypt seed: %w", err)
+		}
+		masterSeed = encryptedSeed
+	} else {
+		masterSeed = seed
+	}
+
+	storage := MasterSeedStorage{MasterSeed: masterSeed, IsEncrypted: isEncrypted}
+
+	file, err := os.Create("seed.dat")
+	if err != nil {
+		return fmt.Errorf("failed to create seed.dat: %w", err)
+	}
+	defer file.Close()
+
+	encoder := gob.NewEncoder(file)
+	if err := encoder.Encode(storage); err != nil {
+		return fmt.Errorf("failed to encode seed storage: %w", err)
+	}
+
+	return nil
+}
+
+// encryptSeed encrypts the seed using AES-GCM with a key derived from the password
+func encryptSeed(seed []byte, password string) ([]byte, error) {
+	// Derive a 32-byte key from the password using SHA-256
+	key := sha256.Sum256([]byte(password))
+
+	block, err := aes.NewCipher(key[:])
+	if err != nil {
+		return nil, err
+	}
+
+	gcm, err := cipher.NewGCM(block)
+	if err != nil {
+		return nil, err
+	}
+
+	// Generate a random nonce
+	nonce := make([]byte, gcm.NonceSize())
+	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
+		return nil, err
+	}
+
+	// Encrypt the seed and prepend the nonce
+	encrypted := gcm.Seal(nonce, nonce, seed, nil)
+	return encrypted, nil
+}
+
+// decryptSeed decrypts the seed using AES-GCM with a key derived from the password
+func decryptSeed(encryptedSeed []byte, password string) ([]byte, error) {
+	// Derive a 32-byte key from the password using SHA-256
+	key := sha256.Sum256([]byte(password))
+
+	block, err := aes.NewCipher(key[:])
+	if err != nil {
+		return nil, err
+	}
+
+	gcm, err := cipher.NewGCM(block)
+	if err != nil {
+		return nil, err
+	}
+
+	nonceSize := gcm.NonceSize()
+	if len(encryptedSeed) < nonceSize {
+		return nil, errors.New("encrypted seed too short")
+	}
+
+	nonce, ciphertext := encryptedSeed[:nonceSize], encryptedSeed[nonceSize:]
+	seed, err := gcm.Open(nil, nonce, ciphertext, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return seed, nil
 }
 
 func (e *MultiWallet) GetAddress(cointype string) (string, error) {

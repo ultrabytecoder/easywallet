@@ -29,9 +29,9 @@ type BtcProvider struct {
 	chain         *chaincfg.Params
 }
 
-func NewBtcProvider(key *hdkeychain.ExtendedKey, serviceUrl string, chain *chaincfg.Params) *BtcProvider {
-	mempoolClient, _ := NewMempoolClient(serviceUrl, "")
-	return &BtcProvider{BaseProvider: NewBaseProvider(key, serviceUrl), MempoolClient: mempoolClient, chain: chain}
+func NewBtcProvider(key *hdkeychain.ExtendedKey, serviceUrl string, proxyUrl string, chain *chaincfg.Params) *BtcProvider {
+	mempoolClient, _ := NewMempoolClient(serviceUrl, proxyUrl)
+	return &BtcProvider{BaseProvider: NewBaseProvider(key, serviceUrl, proxyUrl), MempoolClient: mempoolClient, chain: chain}
 }
 
 func getBech32Address(pubKeyBytes []byte, netParams *chaincfg.Params) (btcutil.Address, error) {

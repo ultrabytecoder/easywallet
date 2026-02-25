@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
-	"time"
 )
 
 // UTXO represents an unspent transaction output
@@ -28,36 +26,10 @@ type MempoolClient struct {
 	HTTPClient *http.Client
 }
 
-func getClientWithProxy(proxyURL string) (*http.Client, error) {
-	if proxyURL == "" {
-		return &http.Client{
-			Transport: &http.Transport{
-				Protocols: &http.Protocols{},
-			},
-			Timeout: 30 * time.Second,
-		}, nil
-	}
-
-	parsedURL, err := url.Parse(proxyURL)
-	if err != nil {
-		return nil, err
-	}
-
-	transport := &http.Transport{
-		Proxy:     http.ProxyURL(parsedURL),
-		Protocols: &http.Protocols{},
-	}
-
-	return &http.Client{
-		Transport: transport,
-		Timeout:   30 * time.Second,
-	}, nil
-}
-
 // NewMempoolClient creates a new mempool.space client
 func NewMempoolClient(baseURL string, proxyURL string) (*MempoolClient, error) {
 	fullURL := baseURL + "/api"
-	client, err := getClientWithProxy(proxyURL)
+	client, err := GetClientWithProxy(proxyURL)
 
 	if err != nil {
 		return nil, err

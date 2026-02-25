@@ -16,6 +16,7 @@ type ProviderInfo struct {
 }
 type Config struct {
 	Network   string         `yaml:"network"`
+	ProxyUrl  string         `yaml:"proxy"`
 	MasterKey string         `yaml:"master_key"`
 	Providers []ProviderInfo `yaml:"providers"`
 }
