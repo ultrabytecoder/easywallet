@@ -36,7 +36,7 @@ func checkFileExists(filePath string) bool {
 }
 
 func main() {
-	fmt.Println("Easy Wallet v 1.0.9")
+	fmt.Println("Easy Wallet v 1.0.10")
 
 	config, err := easywallet.ReadConfig("config.yaml")
 
@@ -236,10 +236,19 @@ func sendTransaction(ew *easywallet.MultiWallet, coin string, recipientAddress s
 	}
 }
 
-func balance(ew *easywallet.MultiWallet, coin string) {
+func balance(ew *easywallet.MultiWallet, coin string) error {
 	fmt.Println("Coin: ", coin)
-	curAddress, _ := ew.GetAddress(coin)
+	curAddress, err := ew.GetAddress(coin)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
 	fmt.Println("Current address: ", curAddress)
-	balance, _ := ew.GetBalance(coin)
+	balance, err := ew.GetBalance(coin)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
 	fmt.Println("Balance: ", balance.String())
+	return nil
 }

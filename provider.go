@@ -20,5 +20,5 @@ type BaseProvider struct {
 }
 
 func NewBaseProvider(key *hdkeychain.ExtendedKey, serviceUrl string, proxyUrl string) BaseProvider {
-	return BaseProvider{Key: key, serviceUrl: serviceUrl}
+	return BaseProvider{Key: key, serviceUrl: serviceUrl, proxyUrl: proxyUrl}
 }
