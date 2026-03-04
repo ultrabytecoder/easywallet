@@ -31,6 +31,8 @@ const (
 	ProviderTypeBtc      string = "BtcProvider"
 	ProviderTypeEth      string = "EthProvider"
 	ProviderTypeEthToken string = "EthTokenProvider"
+	ProviderTypeTrx      string = "TrxProvider"
+	ProviderTypeTrxToken string = "TrxTokenProvider"
 )
 
 type MasterSeedStorage struct {
@@ -84,10 +86,19 @@ func NewMultiWallet(config *Config, masterSeedEncryptionPassword string) (*Multi
 		switch providerInfo.ProviderType {
 		case ProviderTypeBtc:
 			provider = NewBtcProvider(key, providerInfo.ServiceUrl, config.ProxyUrl, &chain)
+			break
 		case ProviderTypeEth:
 			provider = NewEthereumProvider(key, providerInfo.ServiceUrl, config.ProxyUrl)
+			break
 		case ProviderTypeEthToken:
 			provider = NewEthTokenProvider(key, providerInfo.TokenAddress, providerInfo.ServiceUrl, config.ProxyUrl)
+			break
+		case ProviderTypeTrx:
+			provider = NewTrxProvider(key, providerInfo.ServiceUrl, config.ProxyUrl)
+			break
+		case ProviderTypeTrxToken:
+			provider = NewTrxTokenProvider(key, providerInfo.TokenAddress, providerInfo.ServiceUrl, config.ProxyUrl)
+			break
 		}
 
 		providers[providerInfo.Currency] = provider

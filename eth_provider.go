@@ -17,6 +17,10 @@ import (
 	"github.com/shopspring/decimal"
 )
 
+// Compile-time interface checks
+var _ Provider = (*EthereumProvider)(nil)
+var _ Provider = (*EthTokenProvider)(nil)
+
 type EthereumProvider struct {
 	BaseProvider
 }

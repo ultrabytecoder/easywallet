@@ -22,6 +22,9 @@ import (
 	"github.com/shopspring/decimal"
 )
 
+// Compile-time interface check
+var _ Provider = (*BtcProvider)(nil)
+
 type BtcProvider struct {
 	BaseProvider
 	MempoolClient *MempoolClient
