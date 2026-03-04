@@ -72,7 +72,7 @@ func main() {
 func createSeed() {
 	reader := bufio.NewReader(os.Stdin)
 
-	fmt.Print("Enter master seed: ")
+	fmt.Print("Enter mnemonic: ")
 	mnemonic, _ := reader.ReadString('\n')
 	mnemonic = strings.TrimSpace(mnemonic)
 
