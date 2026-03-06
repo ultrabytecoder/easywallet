@@ -183,11 +183,17 @@ func (e *EthereumProvider) Send(recipientAddress string, amount decimal.Decimal)
 	privKey, err := e.Key.ECPrivKey()
 
 	if err != nil {
-		return "", fmt.Errorf("failed to get chain ID: %v", err)
+		return "", fmt.Errorf("failed to get private key: %v", err)
+	}
+
+	// Convert using go-ethereum's ToECDSA to ensure secp256k1 curve (fixes arm64 compatibility)
+	ethPrivKey, err := gcrypto.ToECDSA(privKey.Serialize())
+	if err != nil {
+		return "", fmt.Errorf("failed to convert private key: %v", err)
 	}
 
 	// Sign the transaction
-	signedTx, err := types.SignTx(tx, types.NewLondonSigner(chainID), privKey.ToECDSA())
+	signedTx, err := types.SignTx(tx, types.NewLondonSigner(chainID), ethPrivKey)
 	if err != nil {
 		return "", err
 	}
@@ -391,11 +397,17 @@ func (e *EthTokenProvider) Send(recipientAddress string, amount decimal.Decimal)
 	privKey, err := e.Key.ECPrivKey()
 
 	if err != nil {
-		return "", fmt.Errorf("failed to get chain ID: %v", err)
+		return "", fmt.Errorf("failed to get private key: %v", err)
+	}
+
+	// Convert using go-ethereum's ToECDSA to ensure secp256k1 curve (fixes arm64 compatibility)
+	ethPrivKey, err := gcrypto.ToECDSA(privKey.Serialize())
+	if err != nil {
+		return "", fmt.Errorf("failed to convert private key: %v", err)
 	}
 
 	// Sign the transaction
-	signedTx, err := types.SignTx(tx, types.NewLondonSigner(chainID), privKey.ToECDSA())
+	signedTx, err := types.SignTx(tx, types.NewLondonSigner(chainID), ethPrivKey)
 	if err != nil {
 		return "", fmt.Errorf("failed to sign transaction: %v", err)
 	}
