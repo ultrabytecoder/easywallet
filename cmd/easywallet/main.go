@@ -36,7 +36,7 @@ func checkFileExists(filePath string) bool {
 }
 
 func main() {
-	fmt.Println("Easy Wallet v 1.0.10")
+	fmt.Println("Easy Wallet v 1.0.11")
 
 	config, err := easywallet.ReadConfig("config.yaml")
 
